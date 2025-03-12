@@ -1,68 +1,379 @@
-<html>
-
+<!DOCTYPE html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Call Room</title>
   <style>
-    #root {
-      width: 100vw;
+    /* Osnovni stilovi za raspored stranice */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
       height: 100vh;
+    }
+    #roomInfo {
+      background: #333;
+      color: #fff;
+      padding: 10px;
+      text-align: center;
+    }
+    #videos {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      padding: 10px;
+    }
+    video {
+      width: 300px;
+      height: 225px;
+      margin: 10px;
+      background: #333;
+    }
+    #chat {
+      border-top: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+      height: 150px;
+      overflow-y: auto;
+    }
+    #chatInput {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      background: #f9f9f9;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #sendButton {
+      padding: 8px 12px;
+      margin-left: 10px;
+      border: none;
+      background: #28a745;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
     }
   </style>
 </head>
-
-
 <body>
-<div id="root"></div>
-</body>
-<script src="https://unpkg.com/@zegocloud/zego-uikit-prebuilt/zego-uikit-prebuilt.js"></script>
+<!-- Prikaz room code-a -->
+<div id="roomInfo">
+  <h2>Room Code: <span id="roomCode"></span></h2>
+</div>
+
+<div id="videos">
+  <video id="localVideo" autoplay muted></video>
+  <!-- Udaljeni video streamovi bit će dodani dinamički -->
+</div>
+<div id="chat"></div>
+<div id="chatInput">
+  <input type="text" id="messageInput" placeholder="Type a message...">
+  <button id="sendButton">Send</button>
+</div>
+
+<!-- Učitavanje SockJS i Stomp biblioteka -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 <script>
-  window.onload = function () {
-    function getUrlParams(url) {
-      let urlStr = url.split('?')[1];
-      const urlSearchParams = new URLSearchParams(urlStr);
-      const result = Object.fromEntries(urlSearchParams.entries());
-      return result;
+  // Preuzimanje parametara iz URL-a
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomID = urlParams.get('roomID');
+  const username = urlParams.get('username') || 'Anonymous';
+  // Prikaz room code-a u DOM-u
+  document.getElementById('roomCode').textContent = roomID;
+
+  console.log("RoomID:"+ roomID);
+
+  // Generiramo jedinstveni ID za ovog peer-a
+  const myPeerId = Math.random().toString(36).substring(2, 10);
+
+  // DOM elementi
+  const localVideo = document.getElementById('localVideo');
+  const videosContainer = document.getElementById('videos');
+  const chatBox = document.getElementById('chat');
+  const messageInput = document.getElementById('messageInput');
+  const sendButton = document.getElementById('sendButton');
+
+  // Konfiguracija za WebRTC (koristimo STUN server)
+  const configuration = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:your-turn-server.com:5349",
+        username: "username",
+        credential: "password"
+      }
+    ]
+  };
+  let localStream;
+  let peerConnections = {}; // mapa: peerId => RTCPeerConnection
+  let dataChannels = {};    // mapa: peerId => dataChannel
+
+  // Dohvat lokalnog video/audio streama
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          .then(stream => {
+            localStream = stream;
+            localVideo.srcObject = stream;
+            // Kada je lokalni stream spreman, poveži se na STOMP server
+            connectStomp();
+          })
+          .catch(err => {
+            console.error("Greška pri pristupu medijskim uređajima:", err);
+            // Ako nema dozvole za kamere, ipak se poveži na STOMP server
+            connectStomp();
+          });
+
+
+  // STOMP client
+  let stompClient = null;
+
+  function connectStomp() {
+    const socket = new SockJS('http://localhost:8080/ws');
+    stompClient = Stomp.over(socket);
+    stompClient.connect({}, function(frame) {
+      console.log("STOMP povezan: " + frame);
+      // Pretplati se na destinaciju /topic/room/{roomID} umesto na /user/queue/room/{roomID}
+      stompClient.subscribe(`/topic/room/${roomID}`, function(message) {
+        const data = JSON.parse(message.body);
+        handleSignalingMessage(data);
+      });
+      // Pošalji join poruku
+      sendMessage({
+        type: 'join',
+        room: roomID,
+        peerId: myPeerId,
+        username: username
+      });
+    }, function(error) {
+      console.error("STOMP greška:", error);
+    });
+
+  }
+
+  // Slanje poruke preko STOMP-a
+  function sendMessage(message) {
+    // Šaljemo poruku direktno korisniku (target) ako postoji
+    if (message.target) {
+      stompClient.send(`/app/room/${roomID}/${message.target}`, {}, JSON.stringify(message));
+    } else {
+      stompClient.send(`/app/room/${roomID}`, {}, JSON.stringify(message));
     }
+  }
 
+  // Obrada signalizacijskih poruka
+  async function handleSignalingMessage(message) {
+    const senderId = message.peerId;
+    // Ignoriši vlastite poruke
+    if(senderId === myPeerId) return;
 
-    // Generate a Token by calling a method.
-    // @param 1: appID
-    // @param 2: serverSecret
-    // @param 3: Room ID
-    // @param 4: User ID
-    // @param 5: Username
-    const roomID = getUrlParams(window.location.href)['roomID'] || (Math.floor(Math.random() * 10000) + "");
-    const userID = Math.floor(Math.random() * 10000) + "";
-    const userName = getUrlParams(window.location.href)['username'] || "userName" + userID;
-    const appID = 'GENERATE_YOURS'; // check the video on my https://youtube.con/@boualiali
-    const serverSecret = "GENERATE_YOURS"; // check the video on my https://youtube.con/@boualiali
-    const kitToken = ZegoUIKitPrebuilt.generateKitTokenForTest(appID, serverSecret, roomID, userID, userName);
+    switch(message.type) {
+      case 'join':
+        // Novi peer se pridružio – pošalji mu offer
+        console.log("Novi peer se pridružio:", senderId);
+        createOffer(senderId);
+        break;
+      case 'offer':
+        console.log("Primljen offer od:", senderId);
+        await handleOffer(senderId, message.offer);
+        break;
+      case 'answer':
+        console.log("Primljen answer od:", senderId);
+        await handleAnswer(senderId, message.answer);
+        break;
+      case 'ice-candidate':
+        if(peerConnections[senderId]) {
+          try {
+            await peerConnections[senderId].addIceCandidate(message.candidate);
+          } catch(e) {
+            console.error("Greška pri dodavanju ICE kandidata:", e);
+          }
+        }
+        break;
+      case 'chat':
+        displayChatMessage(message.username, message.message);
+        break;
+      case 'peer-disconnected':
+        if(peerConnections[senderId]) {
+          peerConnections[senderId].close();
+          delete peerConnections[senderId];
+        }
+        const remoteVideo = document.getElementById('video-' + senderId);
+        if(remoteVideo) {
+          remoteVideo.remove();
+        }
+        break;
+      default:
+        console.log("Nepoznat tip poruke:", message.type);
+    }
+  }
 
+  // Kreiranje RTCPeerConnection i slanje offer-a novom peer-u
+  async function createOffer(peerId) {
+    const peerConnection = new RTCPeerConnection(configuration);
+    peerConnections[peerId] = peerConnection;
 
-    const zp = ZegoUIKitPrebuilt.create(kitToken);
-    zp.joinRoom({
-      container: document.querySelector("#root"),
-      sharedLinks: [{
-        name: 'Personal link',
-        url: window.location.protocol + '//' + window.location.host  + window.location.pathname + '?roomID=' + roomID,
-      }],
-      scenario: {
-        mode: ZegoUIKitPrebuilt.VideoConference,
-      },
+    // Dodavanje lokalnog streama
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
 
-      turnOnMicrophoneWhenJoining: false,
-      turnOnCameraWhenJoining: false,
-      showMyCameraToggleButton: true,
-      showMyMicrophoneToggleButton: true,
-      showAudioVideoSettingsButton: true,
-      showScreenSharingButton: true,
-      showTextChat: true,
-      showUserList: true,
-      maxUsers: 2,
-      layout: "Auto",
-      showLayoutButton: false,
+    // Kreiranje data channela za chat
+    const dataChannel = peerConnection.createDataChannel('chat');
+    dataChannels[peerId] = dataChannel;
+    dataChannel.onmessage = (event) => {
+      displayChatMessage(peerId, event.data);
+    };
 
+    // Prikaz udaljenog streama
+    peerConnection.ontrack = (event) => {
+      let remoteVideo = document.getElementById('video-' + peerId);
+      if(!remoteVideo) {
+        remoteVideo = document.createElement('video');
+        remoteVideo.id = 'video-' + peerId;
+        remoteVideo.autoplay = true;
+        videosContainer.appendChild(remoteVideo);
+      }
+      remoteVideo.srcObject = event.streams[0];
+    };
+
+    // Slanje ICE kandidata
+    peerConnection.onicecandidate = (event) => {
+      if(event.candidate) {
+        sendMessage({
+          type: 'ice-candidate',
+          candidate: event.candidate,
+          peerId: myPeerId,
+          target: peerId
+        });
+      }
+    };
+
+    // Kreiraj offer, postavi lokalni opis i pošalji ga
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    sendMessage({
+      type: 'offer',
+      offer: offer,
+      peerId: myPeerId,
+      target: peerId
     });
   }
-</script>
 
+  // Obrada primljenog offer-a
+  async function handleOffer(peerId, offer) {
+    const peerConnection = new RTCPeerConnection(configuration);
+    peerConnections[peerId] = peerConnection;
+
+    // Dodavanje lokalnog streama
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+
+    // Postavljanje data channela kada ga kreira remote peer
+    peerConnection.ondatachannel = (event) => {
+      const dataChannel = event.channel;
+      dataChannels[peerId] = dataChannel;
+      dataChannel.onmessage = (event) => {
+        displayChatMessage(peerId, event.data);
+      };
+    };
+
+    // Prikaz udaljenog streama
+    peerConnection.ontrack = (event) => {
+      let remoteVideo = document.getElementById('video-' + peerId);
+      if(!remoteVideo) {
+        remoteVideo = document.createElement('video');
+        remoteVideo.id = 'video-' + peerId;
+        remoteVideo.autoplay = true;
+        videosContainer.appendChild(remoteVideo);
+      }
+      remoteVideo.srcObject = event.streams[0];
+    };
+
+    // Slanje ICE kandidata
+    peerConnection.onicecandidate = (event) => {
+      if(event.candidate) {
+        sendMessage({
+          type: 'ice-candidate',
+          candidate: event.candidate,
+          peerId: myPeerId,
+          target: peerId
+        });
+      }
+    };
+
+    // Postavi primljeni offer i kreiraj answer
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    sendMessage({
+      type: 'answer',
+      answer: answer,
+      peerId: myPeerId,
+      target: peerId
+    });
+  }
+
+  // Obrada primljenog answer-a
+  async function handleAnswer(peerId, answer) {
+    const peerConnection = peerConnections[peerId];
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+  }
+
+  // Prikaz chat poruka u chat boxu
+  function displayChatMessage(sender, message) {
+    const messageElement = document.createElement('div');
+    messageElement.textContent = sender + ': ' + message;
+    chatBox.appendChild(messageElement);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // Slanje chat poruke
+  sendButton.addEventListener('click', () => {
+    const msg = messageInput.value.trim();
+    if(msg === '') return;
+    displayChatMessage(username, msg);
+    // Slanje preko data channela svim peer-ovima
+    for(let peerId in dataChannels) {
+      if(dataChannels[peerId].readyState === 'open') {
+        dataChannels[peerId].send(msg);
+      }
+    }
+    // Slanje i preko STOMP-a
+    sendMessage({
+      type: 'chat',
+      message: msg,
+      username: username,
+      peerId: myPeerId
+    });
+    messageInput.value = '';
+  });
+
+  // Omogućavanje slanja poruke pritiskom na Enter
+  messageInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter') {
+      sendButton.click();
+    }
+  });
+
+  // Obavijesti ostale korisnike prije nego se stranica zatvori
+  window.addEventListener('beforeunload', () => {
+    sendMessage({
+      type: 'peer-disconnected',
+      peerId: myPeerId
+    });
+  });
+</script>
+</body>
 </html>

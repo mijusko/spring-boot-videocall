@@ -67,8 +67,20 @@ logoutBtn.addEventListener("click", handleLogout);
 
 function handleNewMeeting() {
     const connectedUser = JSON.parse(localStorage.getItem('connectedUser'));
-    window.open(`videocall.html?username=${connectedUser.username}`, "_blank");
+    if (!connectedUser) {
+        console.error("Nema povezanog korisnika!");
+        return;
+    }
+    // Generišemo random ID sobe
+    const roomID = Math.random().toString(36).substring(2, 10).toUpperCase();
+    console.log("handleNewMeeting triggered, generated roomID:", roomID);
+    const url = `videocall.html?roomID=${roomID}&username=${connectedUser.username}`;
+    console.log("Opening URL:", url);
+    window.open(url, "_blank");
+    console.log("RoomID:"+ roomID);
 }
+
+
 
 // Attach the handleNewMeeting function to the "Create a New Meeting" button
 const newMeetingBtn = document.getElementById("newMeetingBtn");
@@ -76,12 +88,13 @@ newMeetingBtn.addEventListener("click", handleNewMeeting);
 
 
 function handleJoinMeeting() {
-    const roomId = document.getElementById("meetingName").value;
+    let roomID = document.getElementById("meetingName").value.trim().toUpperCase(); // Dodaj .toUpperCase()
+    if (!roomID) {
+        alert("Molimo unesite ID sobe");
+        return;
+    }
     const connectedUser = JSON.parse(localStorage.getItem('connectedUser'));
-
-    const url = `videocall.html?roomID=${roomId}&username=${connectedUser.username}`;
-
-    window.open(url, "_blank");
+    window.open(`videocall.html?roomID=${roomID}&username=${connectedUser.username}`, "_blank");
 }
 
 const joinMeetingBtn = document.getElementById("joinMeetingBtn");
