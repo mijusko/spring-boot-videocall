@@ -138,8 +138,10 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   //const LOCAL_IP_ADDRESS = "localhost:8080";
-  const LOCAL_IP_ADDRESS = "https://spring-boot-videocall.onrender.com";
-  const ws = new WebSocket(`ws://${LOCAL_IP_ADDRESS}/ws`);
+// Odredite protokol na osnovu trenutnog protokola stranice
+  const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const host = "spring-boot-videocall.onrender.com";
+  const ws = new WebSocket(`${wsProtocol}//${host}/ws`);
 
   // Element references
   const elements = {
