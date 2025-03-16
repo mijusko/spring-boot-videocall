@@ -1,100 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>WebRTC Video Chat</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
   <style>
-    body {
-      background-color: #f2f2f2;
-      margin: 0;
-      padding: 0;
-    }
-    .btn-circle {
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .enabled-style {
-      background-color: #007bff;
-      color: white;
-    }
-    .video-grid {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px;
-      box-sizing: border-box;
-    }
-    .video-box {
-      width: 200px;
-      height: 200px;
-      position: relative;
-      background-color: #ccc;
-      border: 2px solid #007bff;
-      overflow: hidden;
-    }
-    .video-box video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .video-placeholder {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #999;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5em;
-    }
-    .username-label {
-      position: absolute;
-      bottom: 0;
-      width: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      text-align: center;
-      padding: 4px 0;
-      font-size: 1em;
-    }
-    #localVideoContainer {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 200px;
-      height: 200px;
-      border: 2px solid #007bff;
-      background-color: #ccc;
-      overflow: hidden;
-      z-index: 1000;
-    }
-    #localVideoContainer video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    #localPlaceholder {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: #ccc;
-      color: #333;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5em;
-    }
+    body { background-color: #f2f2f2; margin: 0; padding: 0; }
+    .btn-circle { border-radius: 50%; width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; }
+    .enabled-style { background-color: #007bff; color: white; }
+    .video-grid { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; padding: 10px; }
+    .video-box { width: 200px; height: 200px; position: relative; background-color: #ccc; border: 2px solid #007bff; overflow: hidden; }
+    .video-box video { width: 100%; height: 100%; object-fit: cover; }
+    .video-placeholder { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #999; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5em; }
+    .username-label { position: absolute; bottom: 0; width: 100%; background: rgba(0, 0, 0, 0.6); color: white; text-align: center; padding: 4px 0; font-size: 1em; }
+    #localVideoContainer { position: fixed; bottom: 20px; right: 20px; width: 200px; height: 200px; border: 2px solid #007bff; background-color: #ccc; overflow: hidden; z-index: 1000; }
+    #localVideoContainer video { width: 100%; height: 100%; object-fit: cover; }
+    #localPlaceholder { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #ccc; color: #333; display: flex; align-items: center; justify-content: center; font-size: 1.5em; }
   </style>
 </head>
 <body>
@@ -105,7 +27,6 @@
 
 <div id="roomDiv" class="mt-3">
   <div id="remoteVideosContainer" class="video-grid"></div>
-
   <div class="d-flex justify-content-center mt-3">
     <button id="toggleVideo" class="btn-circle enabled-style me-2">
       <i id="videoIcon" class="bi bi-camera-video-fill"></i>
@@ -113,15 +34,11 @@
     <button id="toggleAudio" class="btn-circle enabled-style me-2">
       <i id="audioIcon" class="bi bi-mic-fill"></i>
     </button>
-    <button id="btnShareScreen" class="btn btn-secondary btn-lg me-2">
-      Share Screen
-    </button>
-    <button id="btnEndCall" class="btn btn-danger btn-lg">
-      End Call
-    </button>
+    <button id="btnShareScreen" class="btn btn-secondary btn-lg me-2">Share Screen</button>
+    <button id="btnEndCall" class="btn btn-danger btn-lg">End Call</button>
   </div>
 
-  <div id="chatContainer" class="mt-3" style="max-width: 600px; margin: auto; width: 100%;">
+  <div id="chatContainer" class="mt-3" style="max-width: 600px; margin: auto;">
     <div id="chatMessages" style="border: 1px solid #ccc; height: 200px; overflow-y: auto; padding: 10px; background-color: #f9f9f9;"></div>
     <div class="input-group mt-2">
       <input type="text" id="chatInput" class="form-control" placeholder="Unesite poruku..." />
@@ -137,13 +54,24 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  //const LOCAL_IP_ADDRESS = "localhost:8080";
-// Odredite protokol na osnovu trenutnog protokola stranice
+  // Podesite WebSocket konekciju
   const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = "spring-boot-videocall.onrender.com";
+  const host = "spring-boot-videocall.onrender.com"; // prilagodi host i port po potrebi
   const ws = new WebSocket(`${wsProtocol}//${host}/ws`);
 
-  // Element references
+  // Dohvati parametre iz URL-a
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomName = urlParams.get('roomID');
+  const username = urlParams.get('username');
+
+  if (!roomName || !username) {
+    alert("Room ID i/ili username nisu prosleđeni.");
+    window.location.href = "index.html";
+  }
+
+  // Sada koristimo username kao jedinstveni identifikator
+  let myPeerId = username;
+
   const elements = {
     toggleVideo: document.getElementById('toggleVideo'),
     toggleAudio: document.getElementById('toggleAudio'),
@@ -162,23 +90,11 @@
   };
 
   const peerUsernames = {};
-  const myPeerId = Math.random().toString(36).substr(2, 9);
   const peerConnections = {};
-
-  let roomName, localStream;
+  let localStream;
   let isCaller = false;
   const streamConstraints = { audio: true, video: true };
   const iceServers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
-
-  // Initialize room
-  const urlParams = new URLSearchParams(window.location.search);
-  roomName = urlParams.get('roomID');
-  const username = urlParams.get('username');
-
-  if (!roomName) {
-    alert("Room ID nije prosleđen.");
-    window.location.href = "index.html";
-  }
 
   elements.roomNumber.textContent = roomName;
   elements.copyRoomBtn.addEventListener("click", copyRoomToClipboard);
@@ -187,7 +103,6 @@
     ws.send(JSON.stringify({
       type: "joinRoom",
       room: roomName,
-      sender: myPeerId,
       username: username
     }));
   };
@@ -210,11 +125,20 @@
       localStream = await navigator.mediaDevices.getUserMedia(streamConstraints);
       elements.localVideo.srcObject = localStream;
       elements.localPlaceholder.style.display = "none";
+      // Ako postoje konekcije, ažuriraj track-ove
+      Object.values(peerConnections).forEach(pc => {
+        pc.getSenders().forEach(sender => {
+          if (sender.track && localStream.getTracks().find(t => t.kind === sender.track.kind)) {
+            sender.replaceTrack(localStream.getTracks().find(t => t.kind === sender.track.kind));
+          }
+        });
+      });
     } catch (error) {
       console.warn("Greška pri dobijanju strima:", error);
       elements.localPlaceholder.style.display = "flex";
       localStream = null;
     }
+    return localStream;
   }
 
   function toggleLocalVideo() {
@@ -240,34 +164,40 @@
       container.id = `video-container-${peerId}`;
       container.className = "video-box";
       container.innerHTML = `
-        <div class="video-placeholder">${username || "Nepoznato"}</div>
-        <div class="username-label">${username || "Nepoznato"}</div>
-      `;
+          <div class="video-placeholder">${username || "Nepoznato"}</div>
+          <div class="username-label">${username || "Nepoznato"}</div>
+        `;
       elements.remoteVideosContainer.appendChild(container);
     }
   }
 
   function handleWebSocketMessage(event) {
     const data = JSON.parse(event.data);
-    if (data.room !== roomName) return;
+    if (data.room && data.room !== roomName) return;
 
     switch (data.type) {
       case "created":
         isCaller = true;
+        // Postavljamo myPeerId ako server pošalje userId (ovde će to biti username)
+        myPeerId = data.userId;
         getLocalStream();
         break;
-
       case "joined":
         isCaller = false;
-        getLocalStream().then(() => sendReadySignal());
+        myPeerId = data.userId;
+        // Možeš pozvati reinitializeConnections() ako je potrebno
+        getLocalStream();
         break;
-
-      case "ready":
-        if (isCaller && data.sender !== myPeerId) {
-          createOfferForPeer(data.sender);
+      case "newUser":
+        if (data.userId && data.userId !== myPeerId) {
+          peerUsernames[data.userId] = data.username;
+          createRemotePlaceholder(data.userId, data.username);
+          if (!peerConnections[data.userId]) {
+            createOfferForPeer(data.userId);
+          }
+          getLocalStream();
         }
         break;
-
       case "offer":
         if (data.target === myPeerId) {
           peerUsernames[data.sender] = data.username;
@@ -275,40 +205,23 @@
           handleOffer(data);
         }
         break;
-
       case "answer":
         if (data.target === myPeerId) {
           handleAnswer(data);
         }
         break;
-
       case "candidate":
         if (data.target === myPeerId) {
           handleCandidate(data);
         }
         break;
-
-      case "newUser":
-        if (data.userId && data.userId !== myPeerId) {
-          peerUsernames[data.userId] = data.username;
-          createRemotePlaceholder(data.userId, data.username);
-          if (myPeerId < data.userId) createOfferForPeer(data.userId);
-        }
+      case "chat":
+        appendChatMessage(data.sender === myPeerId ? "Ja" : data.username, data.message);
         break;
-
       case "full":
         alert("Soba je puna!");
         window.location.reload();
         break;
-
-      case "chat":
-        appendChatMessage(data.sender === myPeerId ? "Vi" : data.username, data.message);
-        break;
-
-      case "userDisconnected":
-        removePeer(data.sender);
-        break;
-
       default:
         console.log("Nepoznat tip poruke:", data.type);
     }
@@ -430,7 +343,6 @@
       container.innerHTML = hasVideo
               ? `<video autoplay playsinline></video><div class="username-label">${username}</div>`
               : `<div class="video-placeholder">${username}</div><div class="username-label">${username}</div>`;
-
       if (hasVideo) {
         const video = container.querySelector('video');
         video.srcObject = stream;
@@ -462,10 +374,19 @@
     }));
   }
 
+  async function reinitializeConnections() {
+    Object.keys(peerConnections).forEach(peerId => {
+      if (peerConnections[peerId]) {
+        peerConnections[peerId].restartIce();
+      }
+    });
+    await getLocalStream();
+    sendReadySignal();
+  }
+
   function sendChatMessage() {
     const message = elements.chatInput.value.trim();
     if (!message) return;
-
     ws.send(JSON.stringify({
       type: "chat",
       room: roomName,
@@ -488,16 +409,14 @@
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       elements.localVideo.srcObject = screenStream;
-
       Object.values(peerConnections).forEach(pc => {
-        const videoSender = pc.getSenders().find(s => s.track?.kind === "video");
+        const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
         if (videoSender) videoSender.replaceTrack(screenStream.getVideoTracks()[0]);
       });
-
       screenStream.getVideoTracks()[0].onended = async () => {
         await getLocalStream();
         Object.values(peerConnections).forEach(pc => {
-          const videoSender = pc.getSenders().find(s => s.track?.kind === "video");
+          const videoSender = pc.getSenders().find(s => s.track && s.track.kind === "video");
           if (videoSender && localStream) {
             videoSender.replaceTrack(localStream.getVideoTracks()[0]);
           }
@@ -509,20 +428,13 @@
   }
 
   function endCall() {
-    // Cleanup peer connections
     Object.values(peerConnections).forEach(pc => pc.close());
-
-    // Stop local stream
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
-
-    // Close WebSocket
     if (ws.readyState === WebSocket.OPEN) {
       ws.close();
     }
-
-    // Redirect to home page
     window.location.href = "index.html";
   }
 
@@ -530,9 +442,7 @@
     navigator.clipboard.writeText(roomName)
             .then(() => {
               elements.copyRoomBtn.textContent = "Copied!";
-              setTimeout(() => {
-                elements.copyRoomBtn.textContent = "Copy";
-              }, 1500);
+              setTimeout(() => { elements.copyRoomBtn.textContent = "Copy"; }, 1500);
             })
             .catch(err => {
               console.error("Greška pri kopiranju:", err);
