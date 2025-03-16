@@ -140,7 +140,7 @@
   //const LOCAL_IP_ADDRESS = "localhost:8080";
 // Odredite protokol na osnovu trenutnog protokola stranice
   const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  const host = "spring-boot-videocall.onrender.com";
+  const host = "https://spring-boot-videocall.onrender.com";
   const ws = new WebSocket(`${wsProtocol}//${host}/ws`);
 
   // Element references
