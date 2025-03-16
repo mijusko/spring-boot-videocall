@@ -171,6 +171,15 @@
     }
   }
 
+  async function sendReadySignal() {
+    ws.send(JSON.stringify({
+      type: "ready",
+      room: roomName,
+      sender: myPeerId,
+      username: username
+    }));
+  }
+
   function handleWebSocketMessage(event) {
     const data = JSON.parse(event.data);
     if (data.room && data.room !== roomName) return;
@@ -186,8 +195,18 @@
         isCaller = false;
         myPeerId = data.userId;
         // Možeš pozvati reinitializeConnections() ako je potrebno
-        getLocalStream();
+        getLocalStream().then(() => {
+          sendReadySignal();
+        });
         break;
+      case "ready":
+        if (data.sender !== myPeerId) {
+          createOfferForPeer(data.sender);
+          // Opcionalno, osveži lokalni stream
+          getLocalStream();
+        }
+        break;
+
       case "newUser":
         if (data.userId && data.userId !== myPeerId) {
           peerUsernames[data.userId] = data.username;
