@@ -1,4 +1,4 @@
-FROM maven:4.0.0-openjdk-21
+FROM maven:3.8.8-openjdk-21
 WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
