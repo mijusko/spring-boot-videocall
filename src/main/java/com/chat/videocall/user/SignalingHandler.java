@@ -26,6 +26,8 @@ public class SignalingHandler extends TextWebSocketHandler {
         Map<String, Object> payload = mapper.readValue(message.getPayload(), Map.class);
         String type = (String) payload.get("type");
         String room = (String) payload.get("room");
+        // Koristimo username kao jedinstveni identifikator
+        String username = (String) payload.get("username");
 
         if ("joinRoom".equals(type)) {
             rooms.putIfAbsent(room, new CopyOnWriteArrayList<>());
@@ -33,17 +35,19 @@ public class SignalingHandler extends TextWebSocketHandler {
 
             if (sessions.size() == 0) {
                 sessions.add(session);
+                // Prvom korisniku šaljemo poruku "created"
                 session.sendMessage(new TextMessage(mapper.writeValueAsString(
-                        Map.of("type", "created", "room", room)
+                        Map.of("type", "created", "room", room, "userId", username)
                 )));
             } else if (sessions.size() < 10) { // Maksimalno 10 korisnika u sobi
                 sessions.add(session);
+                // Novopridošem korisniku šaljemo poruku "joined"
                 session.sendMessage(new TextMessage(mapper.writeValueAsString(
-                        Map.of("type", "joined", "room", room)
+                        Map.of("type", "joined", "room", room, "userId", username)
                 )));
-                // Obavesti postojeće korisnike o novom učesniku
+                // Obavesti sve korisnike da je novi korisnik pristupio
                 broadcastToRoom(room, new TextMessage(mapper.writeValueAsString(
-                        Map.of("type", "newUser", "userId", session.getId())
+                        Map.of("type", "newUser", "userId", username, "username", username)
                 )), session);
             } else {
                 session.sendMessage(new TextMessage(mapper.writeValueAsString(
@@ -54,9 +58,9 @@ public class SignalingHandler extends TextWebSocketHandler {
                 "answer".equals(type) ||
                 "candidate".equals(type) ||
                 "ready".equals(type)) {
+            // Prosledi signaling poruke svima osim sendera
             broadcastToRoom(room, message, session);
         } else if ("chat".equals(type)) {
-            // Rukovanje chat porukama: broadcast poruka svim učesnicima u sobi
             broadcastToRoom(room, message, null);
         } else if ("leaveRoom".equals(type)) {
             leaveRoom(session, room);
@@ -67,7 +71,7 @@ public class SignalingHandler extends TextWebSocketHandler {
         List<WebSocketSession> sessions = rooms.get(room);
         if (sessions != null) {
             for (WebSocketSession s : sessions) {
-                // Ako je sender null šaljemo poruku svima, u suprotnom izostavljamo sender-a
+                // Ako je sender null šaljemo poruku svima, inače izostavljamo sendera
                 if (sender == null || !s.getId().equals(sender.getId())) {
                     if (s.isOpen()) {
                         s.sendMessage(message);
