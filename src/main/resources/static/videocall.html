@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebRTC Video Chat</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" />
+  <style>
+    body {
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
+    }
+    .btn-circle {
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .enabled-style {
+      background-color: #007bff;
+      color: white;
+    }
+    .video-grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+    .video-box {
+      width: 200px;
+      height: 200px;
+      position: relative;
+      background-color: #ccc;
+      border: 2px solid #007bff;
+      overflow: hidden;
+    }
+    .video-box video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .video-placeholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #999;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+    }
+    .username-label {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      text-align: center;
+      padding: 4px 0;
+      font-size: 1em;
+    }
+    #localVideoContainer {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 200px;
+      height: 200px;
+      border: 2px solid #007bff;
+      background-color: #ccc;
+      overflow: hidden;
+      z-index: 1000;
+    }
+    #localVideoContainer video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #localPlaceholder {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ccc;
+      color: #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5em;
+    }
+  </style>
+</head>
+<body>
+<h1 class="text-center my-3">
+  Room: <span id="roomNumber"></span>
+  <button id="copyRoomBtn" class="btn btn-outline-secondary btn-sm">Copy</button>
+</h1>
+
+<div id="roomDiv" class="mt-3">
+  <div id="remoteVideosContainer" class="video-grid"></div>
+
+  <div class="d-flex justify-content-center mt-3">
+    <button id="toggleVideo" class="btn-circle enabled-style me-2">
+      <i id="videoIcon" class="bi bi-camera-video-fill"></i>
+    </button>
+    <button id="toggleAudio" class="btn-circle enabled-style me-2">
+      <i id="audioIcon" class="bi bi-mic-fill"></i>
+    </button>
+    <button id="btnShareScreen" class="btn btn-secondary btn-lg me-2">
+      Share Screen
+    </button>
+    <button id="btnEndCall" class="btn btn-danger btn-lg">
+      End Call
+    </button>
+  </div>
+
+  <div id="chatContainer" class="mt-3" style="max-width: 600px; margin: auto; width: 100%;">
+    <div id="chatMessages" style="border: 1px solid #ccc; height: 200px; overflow-y: auto; padding: 10px; background-color: #f9f9f9;"></div>
+    <div class="input-group mt-2">
+      <input type="text" id="chatInput" class="form-control" placeholder="Unesite poruku..." />
+      <button id="chatSendButton" class="btn btn-primary">Pošalji</button>
+    </div>
+  </div>
+</div>
+
+<div id="localVideoContainer">
+  <video muted id="localVideo" autoplay></video>
+  <div id="localPlaceholder">JA</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  const LOCAL_IP_ADDRESS = "localhost:8080";
+  //const LOCAL_IP_ADDRESS = "http://renderServer";
+  const ws = new WebSocket(`ws://${LOCAL_IP_ADDRESS}/ws`);
+
+  // Element references
+  const elements = {
+    toggleVideo: document.getElementById('toggleVideo'),
+    toggleAudio: document.getElementById('toggleAudio'),
+    roomDiv: document.getElementById('roomDiv'),
+    localVideo: document.getElementById('localVideo'),
+    remoteVideosContainer: document.getElementById('remoteVideosContainer'),
+    chatContainer: document.getElementById('chatContainer'),
+    chatMessages: document.getElementById('chatMessages'),
+    chatInput: document.getElementById('chatInput'),
+    chatSendButton: document.getElementById('chatSendButton'),
+    roomNumber: document.getElementById('roomNumber'),
+    copyRoomBtn: document.getElementById('copyRoomBtn'),
+    localPlaceholder: document.getElementById('localPlaceholder'),
+    btnShareScreen: document.getElementById('btnShareScreen'),
+    btnEndCall: document.getElementById('btnEndCall')
+  };
+
+  const peerUsernames = {};
+  const myPeerId = Math.random().toString(36).substr(2, 9);
+  const peerConnections = {};
+
+  let roomName, localStream;
+  let isCaller = false;
+  const streamConstraints = { audio: true, video: true };
+  const iceServers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+  // Initialize room
+  const urlParams = new URLSearchParams(window.location.search);
+  roomName = urlParams.get('roomID');
+  const username = urlParams.get('username');
+
+  if (!roomName) {
+    alert("Room ID nije prosleđen.");
+    window.location.href = "index.html";
+  }
+
+  elements.roomNumber.textContent = roomName;
+  elements.copyRoomBtn.addEventListener("click", copyRoomToClipboard);
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({
+      type: "joinRoom",
+      room: roomName,
+      sender: myPeerId,
+      username: username
+    }));
+  };
+
+  ws.onmessage = handleWebSocketMessage;
+  ws.onerror = error => console.error("WebSocket error:", error);
+  ws.onclose = () => console.log("WebSocket connection closed");
+
+  elements.toggleVideo.addEventListener("click", toggleLocalVideo);
+  elements.toggleAudio.addEventListener("click", () => toggleTrack("audio"));
+  elements.chatSendButton.addEventListener("click", sendChatMessage);
+  elements.chatInput.addEventListener("keyup", event => {
+    if (event.key === "Enter") sendChatMessage();
+  });
+  elements.btnShareScreen.addEventListener("click", shareScreen);
+  elements.btnEndCall.addEventListener("click", endCall);
+
+  async function getLocalStream() {
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia(streamConstraints);
+      elements.localVideo.srcObject = localStream;
+      elements.localPlaceholder.style.display = "none";
+    } catch (error) {
+      console.warn("Greška pri dobijanju strima:", error);
+      elements.localPlaceholder.style.display = "flex";
+      localStream = null;
+    }
+  }
+
+  function toggleLocalVideo() {
+    if (!localStream) return;
+    const videoTrack = localStream.getVideoTracks()[0];
+    if (videoTrack) {
+      videoTrack.enabled = !videoTrack.enabled;
+      elements.localPlaceholder.style.display = videoTrack.enabled ? "none" : "flex";
+    }
+  }
+
+  function toggleTrack(trackType) {
+    if (!localStream) return;
+    const track = trackType === "video"
+            ? localStream.getVideoTracks()[0]
+            : localStream.getAudioTracks()[0];
+    if (track) track.enabled = !track.enabled;
+  }
+
+  function createRemotePlaceholder(peerId, username) {
+    if (!document.getElementById(`video-container-${peerId}`)) {
+      const container = document.createElement("div");
+      container.id = `video-container-${peerId}`;
+      container.className = "video-box";
+      container.innerHTML = `
+        <div class="video-placeholder">${username || "Nepoznato"}</div>
+        <div class="username-label">${username || "Nepoznato"}</div>
+      `;
+      elements.remoteVideosContainer.appendChild(container);
+    }
+  }
+
+  function handleWebSocketMessage(event) {
+    const data = JSON.parse(event.data);
+    if (data.room !== roomName) return;
+
+    switch (data.type) {
+      case "created":
+        isCaller = true;
+        getLocalStream();
+        break;
+
+      case "joined":
+        isCaller = false;
+        getLocalStream().then(() => sendReadySignal());
+        break;
+
+      case "ready":
+        if (isCaller && data.sender !== myPeerId) {
+          createOfferForPeer(data.sender);
+        }
+        break;
+
+      case "offer":
+        if (data.target === myPeerId) {
+          peerUsernames[data.sender] = data.username;
+          createRemotePlaceholder(data.sender, data.username);
+          handleOffer(data);
+        }
+        break;
+
+      case "answer":
+        if (data.target === myPeerId) {
+          handleAnswer(data);
+        }
+        break;
+
+      case "candidate":
+        if (data.target === myPeerId) {
+          handleCandidate(data);
+        }
+        break;
+
+      case "newUser":
+        if (data.userId && data.userId !== myPeerId) {
+          peerUsernames[data.userId] = data.username;
+          createRemotePlaceholder(data.userId, data.username);
+          if (myPeerId < data.userId) createOfferForPeer(data.userId);
+        }
+        break;
+
+      case "full":
+        alert("Soba je puna!");
+        window.location.reload();
+        break;
+
+      case "chat":
+        appendChatMessage(data.sender === myPeerId ? "Vi" : data.username, data.message);
+        break;
+
+      case "userDisconnected":
+        removePeer(data.sender);
+        break;
+
+      default:
+        console.log("Nepoznat tip poruke:", data.type);
+    }
+  }
+
+  function createOfferForPeer(peerId) {
+    const pc = new RTCPeerConnection(iceServers);
+    peerConnections[peerId] = pc;
+
+    pc.onicecandidate = event => {
+      if (event.candidate) {
+        ws.send(JSON.stringify({
+          type: "candidate",
+          room: roomName,
+          sender: myPeerId,
+          target: peerId,
+          candidate: event.candidate.candidate,
+          sdpMLineIndex: event.candidate.sdpMLineIndex
+        }));
+      }
+    };
+
+    pc.ontrack = event => {
+      const remoteUsername = peerUsernames[peerId] || "Nepoznato";
+      addRemoteStream(peerId, event.streams[0], remoteUsername);
+    };
+
+    if (localStream) {
+      localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+    }
+
+    pc.createOffer()
+            .then(offer => pc.setLocalDescription(offer))
+            .then(() => {
+              ws.send(JSON.stringify({
+                type: "offer",
+                room: roomName,
+                sender: myPeerId,
+                target: peerId,
+                sdp: pc.localDescription,
+                username: username
+              }));
+            })
+            .catch(console.error);
+  }
+
+  function handleOffer(data) {
+    const peerId = data.sender;
+    let pc = peerConnections[peerId];
+    if (!pc) {
+      pc = new RTCPeerConnection(iceServers);
+      peerConnections[peerId] = pc;
+
+      pc.onicecandidate = event => {
+        if (event.candidate) {
+          ws.send(JSON.stringify({
+            type: "candidate",
+            room: roomName,
+            sender: myPeerId,
+            target: peerId,
+            candidate: event.candidate.candidate,
+            sdpMLineIndex: event.candidate.sdpMLineIndex
+          }));
+        }
+      };
+
+      pc.ontrack = event => {
+        const remoteUsername = peerUsernames[peerId] || "Nepoznato";
+        addRemoteStream(peerId, event.streams[0], remoteUsername);
+      };
+
+      if (localStream) {
+        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+      }
+    }
+
+    pc.setRemoteDescription(new RTCSessionDescription(data.sdp))
+            .then(() => pc.createAnswer())
+            .then(answer => pc.setLocalDescription(answer))
+            .then(() => {
+              ws.send(JSON.stringify({
+                type: "answer",
+                room: roomName,
+                sender: myPeerId,
+                target: peerId,
+                sdp: pc.localDescription
+              }));
+            })
+            .catch(console.error);
+  }
+
+  function handleAnswer(data) {
+    const peerId = data.sender;
+    const pc = peerConnections[peerId];
+    if (pc && pc.signalingState === "have-local-offer") {
+      pc.setRemoteDescription(new RTCSessionDescription(data.sdp))
+              .catch(console.error);
+    }
+  }
+
+  function handleCandidate(data) {
+    const peerId = data.sender;
+    const pc = peerConnections[peerId];
+    if (pc) {
+      const candidate = new RTCIceCandidate({
+        candidate: data.candidate,
+        sdpMLineIndex: data.sdpMLineIndex
+      });
+      pc.addIceCandidate(candidate).catch(console.error);
+    }
+  }
+
+  function addRemoteStream(peerId, stream, username) {
+    const container = document.getElementById(`video-container-${peerId}`);
+    if (!container) return;
+
+    const updateContainer = () => {
+      const hasVideo = stream.getVideoTracks().some(track => track.enabled);
+      container.innerHTML = hasVideo
+              ? `<video autoplay playsinline></video><div class="username-label">${username}</div>`
+              : `<div class="video-placeholder">${username}</div><div class="username-label">${username}</div>`;
+
+      if (hasVideo) {
+        const video = container.querySelector('video');
+        video.srcObject = stream;
+      }
+    };
+
+    updateContainer();
+    stream.getVideoTracks().forEach(track => {
+      track.addEventListener('mute', updateContainer);
+      track.addEventListener('unmute', updateContainer);
+    });
+  }
+
+  function removePeer(peerId) {
+    if (peerConnections[peerId]) {
+      peerConnections[peerId].close();
+      delete peerConnections[peerId];
+    }
+    const videoElem = document.getElementById(`video-container-${peerId}`);
+    if (videoElem) videoElem.remove();
+    delete peerUsernames[peerId];
+  }
+
+  async function sendReadySignal() {
+    ws.send(JSON.stringify({
+      type: "ready",
+      room: roomName,
+      sender: myPeerId
+    }));
+  }
+
+  function sendChatMessage() {
+    const message = elements.chatInput.value.trim();
+    if (!message) return;
+
+    ws.send(JSON.stringify({
+      type: "chat",
+      room: roomName,
+      sender: myPeerId,
+      username: username,
+      message: message,
+      timestamp: new Date().toISOString()
+    }));
+    elements.chatInput.value = "";
+  }
+
+  function appendChatMessage(sender, message) {
+    const messageElem = document.createElement("div");
+    messageElem.innerHTML = `<strong>${sender}:</strong> ${message}`;
+    elements.chatMessages.appendChild(messageElem);
+    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+  }
+
+  async function shareScreen() {
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      elements.localVideo.srcObject = screenStream;
+
+      Object.values(peerConnections).forEach(pc => {
+        const videoSender = pc.getSenders().find(s => s.track?.kind === "video");
+        if (videoSender) videoSender.replaceTrack(screenStream.getVideoTracks()[0]);
+      });
+
+      screenStream.getVideoTracks()[0].onended = async () => {
+        await getLocalStream();
+        Object.values(peerConnections).forEach(pc => {
+          const videoSender = pc.getSenders().find(s => s.track?.kind === "video");
+          if (videoSender && localStream) {
+            videoSender.replaceTrack(localStream.getVideoTracks()[0]);
+          }
+        });
+      };
+    } catch (error) {
+      console.error("Greška pri deljenju ekrana:", error);
+    }
+  }
+
+  function endCall() {
+    // Cleanup peer connections
+    Object.values(peerConnections).forEach(pc => pc.close());
+
+    // Stop local stream
+    if (localStream) {
+      localStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Close WebSocket
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.close();
+    }
+
+    // Redirect to home page
+    window.location.href = "index.html";
+  }
+
+  function copyRoomToClipboard() {
+    navigator.clipboard.writeText(roomName)
+            .then(() => {
+              elements.copyRoomBtn.textContent = "Copied!";
+              setTimeout(() => {
+                elements.copyRoomBtn.textContent = "Copy";
+              }, 1500);
+            })
+            .catch(err => {
+              console.error("Greška pri kopiranju:", err);
+            });
+  }
+</script>
+</body>
+</html>
