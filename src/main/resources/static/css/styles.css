@@ -2,60 +2,70 @@ body {
     margin: 0;
     padding: 0;
     font-family: Arial, sans-serif;
-    background-color: #f1f1f1; /* Change the background color of the page */
+    background-color: #222222; /* Pozadinska boja stranice */
 }
 
 .container {
     display: flex;
+    flex-direction: column;  /* Postavlja elemente jedan ispod drugog */
     justify-content: center;
     align-items: center;
     height: 100vh;
 }
 
 .login-form,
+.register-form,
 .social-icons {
     background-color: #ffffff;
     padding: 40px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 300px;  /* Opcionalno radi ujednačen izgled */
+    margin-bottom: 20px;
 }
 
 .social-icons {
-    margin-right: 20px;
-    height: fit-content;
+    text-align: center;
 }
 
-.social-icons {
+.social-links {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
+    gap: 10px;  /* Razmak između ikona */
 }
 
 .login-form input[type="text"],
 .login-form input[type="password"],
 .login-form input[type="email"],
-.login-form button {
+.login-form button,
+.register-form input[type="text"],
+.register-form input[type="password"],
+.register-form input[type="email"],
+.register-form button {
     width: 100%;
     padding: 10px;
     margin-bottom: 20px;
     border: 1px solid #ccc;
     border-radius: 5px;
-    box-sizing: border-box; /* Include padding and border in the width */
+    box-sizing: border-box;
 }
 
-.login-form button {
-    background-color: #4CAF50;
+.login-form button,
+.register-form button {
+    background-color: #003366;  /* Tamnija plava boja */
     color: #fff;
     border: none;
     cursor: pointer;
 }
 
-.login-form p {
+.login-form p,
+.register-form p {
     margin-top: 10px;
 }
 
-.login-form a {
-    color: #4CAF50;
+.login-form a,
+.register-form a {
+    color: #003366;  /* Tamnija plava boja */
     text-decoration: none;
 }
 
@@ -63,19 +73,14 @@ body {
     margin-bottom: 20px;
 }
 
-.social-icons a {
+.social-links a {
     display: inline-block;
-    margin: 5px;
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background-color: #4CAF50;
+    background-color: #003366;  /* Tamnija plava boja */
     color: #fff;
     text-align: center;
     line-height: 40px;
     text-decoration: none;
-}
-
-.user-email {
-    font-size: 15px !important;
 }
