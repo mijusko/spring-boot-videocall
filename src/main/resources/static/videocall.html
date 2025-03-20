@@ -65,13 +65,13 @@
   const streamConstraints = { audio: true, video: true };
   const iceServers = {
     iceServers: [
-      { urls: `stun:localhost:3478` },
-      { urls: `turn:localhost:3478`, username: "username", credential: "password" }
+      { urls: `stun:spring-boot-videocall.onrender.com:3478` },
+      { urls: `turn:spring-boot-videocall.onrender.com:3478`, username: "username", credential: "password" }
     ]
   };
 
   // Povezivanje sa Socket.IO serverom
-  let socket = io.connect(`http://localhost:8000`);
+  let socket = io.connect(`https://spring-boot-videocall.onrender.com`);
 
   // Parsiranje URL parametara za roomID i username
   const urlParams = new URLSearchParams(window.location.search);
