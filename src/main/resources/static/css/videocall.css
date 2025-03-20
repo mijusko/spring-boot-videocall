@@ -1,0 +1,158 @@
+body {
+    margin: auto;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #222222; /* tamna pozadina */
+}
+
+h1 {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.btn-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    margin: 5px;
+    border-radius: 50%;
+    border: none;
+    line-height: 1.3;
+}
+
+.bi {
+    font-size: 20px;
+    color: white;
+}
+
+.enabled-style {
+    background-color: #008cff;
+}
+
+.disabled-style {
+    background-color: #ff3030;
+}
+
+/* Remote video container – responsivan i pozicioniran relativno */
+#remoteVideoContainer {
+    width: 80vw;
+    max-width: 1000px;
+    height: 550px;
+    background-color: #363636;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Local video – pozicioniran u gornjem desnom uglu remote videa */
+#localVideo {
+    width: 200px;
+    height: 200px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: 2px solid white;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+/* Chat kontejner – zauzima donju trećinu ekrana i fiksiran je na dnu */
+#chatContainer {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80vw;
+    max-width: 1000px;
+    height: 22vh;
+    background: #f1f1f1;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+}
+
+/* Poruke u chatu */
+#chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    background: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+/* Stilizacija mojih poruka – svetlo plavi okvir i pozadina */
+.chat-message-mine {
+    border: 2px solid #a3c7ff;
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #a3c7ff;
+    color: #222222;
+    max-width: 70%;
+    align-self: flex-end;
+}
+
+/* Stilizacija poruka drugih korisnika – tamno plavi okvir i pozadina */
+.chat-message-other {
+    border: 2px solid #0056b3;
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: #0056b3;
+    color: white;
+    max-width: 70%;
+    align-self: flex-start;
+}
+
+/* Kontejner za unos poruka */
+.chat-input-container {
+    margin-top: 10px;
+    display: flex;
+}
+
+.chat-input-container input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.chat-input-container button {
+    margin-left: 10px;
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.chat-input-container button:hover {
+    background: #0056b3;
+}
+
+.btn-circle {
+    margin: 0 20px !important;
+}
+
+/* Responsive podešavanja za manje ekrane (npr. mobilne uređaje)
+@media (max-width: 768px) {
+    #remoteVideoContainer {
+        width: 100vw;
+        height: 300px;
+    }
+    #localVideo {
+        width: 120px;
+        height: 90px;
+        top: 5px;
+        right: 5px;
+    }
+    #chatContainer {
+        width: 100vw;
+        height: 20vh;
+    }
+}
+*/
