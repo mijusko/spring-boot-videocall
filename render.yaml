@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: nginx
-    env: docker
-    dockerfilePath: ./nginx/Dockerfile
-    healthCheckPath: /
-    plan: free
