@@ -117,10 +117,45 @@
   btnToggleAudio.addEventListener("click", () => toggleTrack("audio"));
 
   function toggleTrack(trackType) {
-    if (!localStream) return;
-    const track = trackType === "video" ? localStream.getVideoTracks()[0] : localStream.getAudioTracks()[0];
-    track.enabled = !track.enabled;
+  if (!localStream) return;
+  const track = trackType === "video" 
+    ? localStream.getVideoTracks()[0] 
+    : localStream.getAudioTracks()[0];
+  track.enabled = !track.enabled;
+  
+  if (trackType === "audio") {
+    const audioButton = document.getElementById("toggleAudio");
+    const audioIcon = document.getElementById("audioIcon");
+    if (track.enabled) {
+      // Ako je audio uključen: plava pozadina i standardna ikonica mikrofona
+      audioButton.classList.remove("disabled-style");
+      audioButton.classList.add("enabled-style");
+      audioIcon.classList.remove("bi-mic-mute-fill");
+      audioIcon.classList.add("bi-mic-fill");
+    } else {
+      // Ako je audio isključen: crvena pozadina i ikonica mutiranog mikrofona
+      audioButton.classList.remove("enabled-style");
+      audioButton.classList.add("disabled-style");
+      audioIcon.classList.remove("bi-mic-fill");
+      audioIcon.classList.add("bi-mic-mute-fill");
+    }
+  } else if (trackType === "video") {
+    const videoButton = document.getElementById("toggleVideo");
+    const videoIcon = document.getElementById("videoIcon");
+    if (track.enabled) {
+      videoButton.classList.remove("disabled-style");
+      videoButton.classList.add("enabled-style");
+      videoIcon.classList.remove("bi-camera-video-off-fill");
+      videoIcon.classList.add("bi-camera-video-fill");
+    } else {
+      videoButton.classList.remove("enabled-style");
+      videoButton.classList.add("disabled-style");
+      videoIcon.classList.remove("bi-camera-video-fill");
+      videoIcon.classList.add("bi-camera-video-off-fill");
+    }
   }
+}
+
 
   // Socket.IO event handler-i
   socket.on("created", room => {
