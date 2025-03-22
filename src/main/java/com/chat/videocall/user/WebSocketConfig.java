@@ -10,15 +10,15 @@ public class WebSocketConfig {
     @Value("${socket.host}")
     private String host;
 
-    @Value("${socket.port}")
-    private int port;
+   /* @Value("${socket.port}")
+    private int port;*/
 
     @Bean
     public SocketIOServer socketIOServer() throws Exception {
         com.corundumstudio.socketio.Configuration config =
                 new com.corundumstudio.socketio.Configuration();
         config.setHostname(host);
-        config.setPort(port);
+        //config.setPort(port);
         return new SocketIOServer(config);
     }
 }
