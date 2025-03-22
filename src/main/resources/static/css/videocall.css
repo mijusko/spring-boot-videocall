@@ -10,6 +10,28 @@ h1 {
     font-weight: bold;
 }
 
+/* Stil za dugme za kopiranje */
+.copy-btn {
+    background-color: #007bff;
+    border: none;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 5px;
+    font-size: 0.4em;
+    cursor: pointer;
+    margin-left: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s ease;
+}
+.copy-btn:hover {
+    background-color: #0056b3;
+}
+.copy-btn:focus {
+    outline: none;
+}
+
 .btn-circle {
     display: flex;
     align-items: center;
@@ -39,7 +61,7 @@ h1 {
 #remoteVideoContainer {
     width: 80vw;
     max-width: 1000px;
-    height: 550px;
+    height: 55vh;
     background-color: #363636;
     position: relative;
     display: flex;
@@ -138,21 +160,68 @@ h1 {
     margin: 0 20px !important;
 }
 
-/* Responsive podešavanja za manje ekrane (npr. mobilne uređaje)
+/* Responsive podešavanja za manje ekrane (npr. mobilne uređaje)*/
 @media (max-width: 768px) {
+    /* Ostala pravila za manje ekrane... */
     #remoteVideoContainer {
-        width: 100vw;
-        height: 300px;
+        height: 50vh;
     }
     #localVideo {
-        width: 120px;
-        height: 90px;
+        width: 100px;
+        height: 100px;
         top: 5px;
         right: 5px;
     }
-    #chatContainer {
-        width: 100vw;
-        height: 20vh;
+    h1 {
+        margin: 15px !important;
+    }
+    #chatInput {
+        width: 50vw;
+        font-size: 12px; /* Podesite željenu veličinu fonta */
+    }
+    #chatInput,
+    #chatSendButton,
+    .chat-message-mine,
+    .chat-message-other {
+        font-size: 12px !important;
+        padding: 4px !important;
+        margin-bottom: 4px !important;
+    }
+    #chatContainer{
+        padding: 4px !important;
+    }
+    .btn-circle {
+        width: 35px;
+        height: 35px;
     }
 }
-*/
+@media (max-height: 768px){
+    h1{
+        margin: 10px!important;
+    }
+    #chatContainer{
+        height: 25vh;
+    }
+    #remoteVideoContainer {
+        height: 45vh;
+    }
+    #localVideo {
+        width: 60px;
+        height: 60px;
+    }
+    #chatInput,
+    #chatSendButton,
+    .chat-message-mine,
+    .chat-message-other {
+        font-size: 12px !important;
+        padding: 4px !important;
+        margin-bottom: 4px !important;
+    }
+    #chatContainer{
+        padding: 4px !important;
+    }
+    .btn-circle {
+        width: 35px;
+        height: 35px;
+    }
+}
