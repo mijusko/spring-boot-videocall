@@ -10,7 +10,10 @@
 </head>
 <body>
 <h1 style="text-align: center; margin: 15px 10px 30px 10px">
-  <span id="roomIdDisplay" style="font-size: 0.8em; margin-left: 20px; cursor: pointer;" title="Kliknite da kopirate Room ID"></span>
+  <span id="roomIdDisplay" style="font-size: 0.8em; margin-left: 20px;"></span>
+  <button id="copyButton" class="copy-btn" title="Kopiraj Room ID">
+    <i class="bi bi-clipboard"></i> <span id="copyText">Copy</span>
+  </button>
 </h1>
 
 <!-- Soba se već kreira i prikazuje, pa ne postoji div za konfiguraciju sobe -->
@@ -80,14 +83,23 @@
   const urlParams = new URLSearchParams(window.location.search);
   roomName = urlParams.get('roomID');
   username = urlParams.get('username');
+  
+// Prikaz RoomID-a i kopiranje preko dugmeta
+  const roomDisplay = getElement("roomIdDisplay");
+  const copyButton = getElement("copyButton");
+  const copyText = getElement("copyText");
 
-  // Prikaz RoomID-a i kopiranje na klik
   if (roomName) {
-    const roomDisplay = document.getElementById("roomIdDisplay");
     roomDisplay.textContent = `Room: ${roomName}`;
-    roomDisplay.addEventListener("click", function() {
+    copyButton.addEventListener("click", function() {
       navigator.clipboard.writeText(roomName)
-              .then(() => alert("Room ID je kopiran!"))
+              .then(() => {
+                const originalText = copyText.textContent;
+                copyText.textContent = "Copied";
+                setTimeout(() => {
+                  copyText.textContent = originalText;
+                }, 1000);
+              })
               .catch(err => console.error("Greška pri kopiranju Room ID-a:", err));
     });
   } else {
