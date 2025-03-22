@@ -7,8 +7,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class WebSocketConfig {
 
-    @Value("${socket.host}")
-    private String host;
+    @Value("${server.port}")
+    private int serverPort;
 
    /* @Value("${socket.port}")
     private int port;*/
@@ -17,8 +17,10 @@ public class WebSocketConfig {
     public SocketIOServer socketIOServer() throws Exception {
         com.corundumstudio.socketio.Configuration config =
                 new com.corundumstudio.socketio.Configuration();
-        config.setHostname(host);
-        //config.setPort(port);
+        config.setHostname("0.0.0.0");
+        config.setPort(serverPort); // Isti port kao Spring Boot
+        config.setTransports(Transport.WEBSOCKET); // Forsiraj WebSocket
+        config.setOrigin("*"); // Dozvoli sve CORS zahteve
         return new SocketIOServer(config);
     }
 }
