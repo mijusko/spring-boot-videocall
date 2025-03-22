@@ -70,7 +70,11 @@
   };
 
   // Povezivanje sa Socket.IO serverom
-  let socket = io.connect(`https://spring-boot-videocall.onrender.com`);
+  // Koristite WebSocket transport eksplicitno
+  let socket = io.connect(window.location.origin, {
+    transports: ['websocket'],
+    path: '/socket.io/' // Proverite putanju u server konfiguraciji
+  });
 
   // Parsiranje URL parametara za roomID i username
   const urlParams = new URLSearchParams(window.location.search);
