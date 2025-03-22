@@ -1,0 +1,5 @@
+services:
+  - type: web
+    name: videocall
+    dockerfile: Dockerfile # Koristi Dockerfile umesto direktnog JAR-a
+    webSocket: true
