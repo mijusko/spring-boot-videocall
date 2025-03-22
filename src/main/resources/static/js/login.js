@@ -13,8 +13,7 @@ function handleLogin(event) {
     //fetch('http://localhost:8080/api/v1/users/login', {
     fetch('https://spring-boot-videocall.onrender.com/api/v1/users/login', {
             method: 'POST',
-            headers
-    }: {
+            headers: {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(user)
