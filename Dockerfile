@@ -8,16 +8,17 @@ RUN mvn clean package -DskipTests
 
 # Faza 2: Runtime sa Nginx i Spring Boot
 FROM nginx:alpine
-WORKDIR /app
 
-# Kopiraj Nginx konfiguraciju
+# Kopiraj konfiguracijske fajlove
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY startup.sh /app/startup.sh
 
-# Instaliraj Java runtime
-RUN apk add --no-cache openjdk21
+# Instaliraj zavisnosti
+RUN apk add --no-cache openjdk21 netcat-openbsd && \
+    chmod +x /app/startup.sh
 
 # Kopiraj JAR iz build faze
 COPY --from=builder /app/target/*.jar /app/app.jar
 
-# Pokreni oba servisa paralelno
-CMD (java -jar /app/app.jar &) && nginx -g "daemon off;"
+# Pokreni skriptu
+CMD ["/app/startup.sh"]
