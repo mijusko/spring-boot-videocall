@@ -21,7 +21,7 @@ public class SocketHandler {
     public SocketHandler(SocketIOServer server) {
         this.server = server;
         server.addListeners(this);
-        //server.start();
+        server.start();
     }
 
     @OnConnect
