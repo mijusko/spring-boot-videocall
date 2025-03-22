@@ -167,8 +167,8 @@ h1 {
         height: 50vh;
     }
     #localVideo {
-        width: 100px;
-        height: 100px;
+        width: 120px;
+        height: 120px;
         top: 5px;
         right: 5px;
     }
@@ -206,8 +206,8 @@ h1 {
         height: 45vh;
     }
     #localVideo {
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
     }
     #chatInput,
     #chatSendButton,
