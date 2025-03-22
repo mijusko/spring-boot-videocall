@@ -1,5 +1,5 @@
 # Faza 1: Build Spring Boot aplikacije
-FROM maven:3.8.6-openjdk-21 AS builder
+FROM openjdk:21-jdk-slim AS builder
 WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline
