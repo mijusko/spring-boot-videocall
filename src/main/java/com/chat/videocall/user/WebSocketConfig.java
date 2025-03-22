@@ -19,7 +19,7 @@ public class WebSocketConfig {
         com.corundumstudio.socketio.Configuration config =
                 new com.corundumstudio.socketio.Configuration();
         config.setHostname("0.0.0.0");
-        config.setPort(serverPort); // Isti port kao Spring Boot
+        config.setPort(8000); // Isti port kao Spring Boot
         config.setTransports(Transport.WEBSOCKET); // Forsiraj WebSocket
         config.setOrigin("*"); // Dozvoli sve CORS zahteve
         return new SocketIOServer(config);
