@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: videocall
+    dockerfile: Dockerfile
+    webSocket: true
+    env: java
+    port: 10000 # Eksplicitno definišite port za Render
