@@ -66,30 +66,16 @@
 
   // Konfiguracija media stream-a i ICE servera
   const streamConstraints = { audio: true, video: true };
-  let iceServers; // Globalna promenljiva za ICE konfiguraciju
-
-  // Učitavanje ICE konfiguracije sa servera preko REST endpoint-a
-  fetch('https://spring-boot-videocall.onrender.com/api/iceConfig')
-    .then(response => {
-      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-      return response.json();
-    })
-    .then(config => {
-      iceServers = config.iceServers; // Koristite .iceServers polje
-      console.log("ICE konfiguracija učitana:", iceServers);
-    })
-    .catch(error => console.error("Greška:", error));
-
-  // Funkcija za kreiranje peer konekcije koja koristi dinamički učitanu konfiguraciju
-  function createPeerConnection() {
-    if (!iceServers) {
-      console.error("ICE konfiguracija nije učitana!");
-      return;
-    }
-    rtcPeerConnection = new RTCPeerConnection(iceServers);
-    rtcPeerConnection.onicecandidate = onIceCandidate;
-    rtcPeerConnection.ontrack = onTrack;
-  }
+  const iceServers = {
+    iceServers: [
+      { urls: "stun:stun.l.google.com:19302" },
+      {
+        urls: "turn:relay1.expressturn.com:3478", // Zamijenite "your.domain.com" vašim domenom ili javnom IP adresom
+        username: "efK04B9KTBDHGOBL3Q",        // Korisničko ime za autentikaciju
+        credential: "Wl5OmiS69sDf1me3"       // Lozinka za autentikaciju
+      }
+    ]
+  };
 
 
   // Povezivanje sa Socket.IO serverom
@@ -103,7 +89,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   roomName = urlParams.get('roomID');
   username = urlParams.get('username');
-  
+
 // Prikaz RoomID-a i kopiranje preko dugmeta
   const roomDisplay = getElement("roomIdDisplay");
   const copyButton = getElement("copyButton");
@@ -138,11 +124,11 @@
 
   function toggleTrack(trackType) {
   if (!localStream) return;
-  const track = trackType === "video" 
-    ? localStream.getVideoTracks()[0] 
+  const track = trackType === "video"
+    ? localStream.getVideoTracks()[0]
     : localStream.getAudioTracks()[0];
   track.enabled = !track.enabled;
-  
+
   if (trackType === "audio") {
     const audioButton = document.getElementById("toggleAudio");
     const audioIcon = document.getElementById("audioIcon");
