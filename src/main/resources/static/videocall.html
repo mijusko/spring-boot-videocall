@@ -70,14 +70,15 @@
 
   // Učitavanje ICE konfiguracije sa servera preko REST endpoint-a
   fetch('/api/iceConfig')
-          .then(response => response.json())
-          .then(config => {
-            iceServers = config;
-            console.log("ICE konfiguracija učitana:", iceServers);
-            // Ako već želite da kreirate konekciju odmah nakon učitavanja konfiguracije,
-            // možete ovde pozvati createPeerConnection() ili postaviti neki flag.
-          })
-          .catch(error => console.error("Greška pri učitavanju ICE konfiguracije:", error));
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
+    .then(config => {
+      iceServers = config.iceServers; // Koristite .iceServers polje
+      console.log("ICE konfiguracija učitana:", iceServers);
+    })
+    .catch(error => console.error("Greška:", error));
 
   // Funkcija za kreiranje peer konekcije koja koristi dinamički učitanu konfiguraciju
   function createPeerConnection() {
