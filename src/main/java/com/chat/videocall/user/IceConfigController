@@ -1,15 +1,15 @@
-package com.chat.videocall.user; // Proverite da li je paket ispravan
+package com.chat.videocall.user;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
-@RequestMapping("/api")
+@CrossOrigin(origins = "*")
 public class IceConfigController {
 
     @Value("${stun.server.url}")
@@ -24,24 +24,22 @@ public class IceConfigController {
     @Value("${turn.server.password}")
     private String turnServerPassword;
 
-    @GetMapping("/iceConfig")
-    public Map<String, Object> getIceConfig() {
-        Map<String, Object> iceConfig = new HashMap<>();
+    @GetMapping("/api/iceConfig")
+    public Map<String, List<Map<String, String>>> getIceConfig() {
         List<Map<String, String>> iceServers = new ArrayList<>();
 
-        // Dodavanje STUN servera
+        // STUN
         Map<String, String> stun = new HashMap<>();
         stun.put("urls", stunServerUrl);
         iceServers.add(stun);
 
-        // Dodavanje TURN servera
+        // TURN
         Map<String, String> turn = new HashMap<>();
         turn.put("urls", turnServerUrl);
         turn.put("username", turnServerUsername);
         turn.put("credential", turnServerPassword);
         iceServers.add(turn);
 
-        iceConfig.put("iceServers", iceServers);
-        return Map.of("iceServers", iceServers); // Direktno vraća iceServers listu
+        return Map.of("iceServers", iceServers);
     }
 }
