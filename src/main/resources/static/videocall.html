@@ -66,11 +66,30 @@
 
   // Konfiguracija media stream-a i ICE servera
   const streamConstraints = { audio: true, video: true };
-  const iceServers = {
-    iceServers: [
-      { urls: "stun:stun.l.google.com:19302" }
-    ]
-  };
+  let iceServers; // Globalna promenljiva za ICE konfiguraciju
+
+  // Učitavanje ICE konfiguracije sa servera preko REST endpoint-a
+  fetch('/api/iceConfig')
+          .then(response => response.json())
+          .then(config => {
+            iceServers = config;
+            console.log("ICE konfiguracija učitana:", iceServers);
+            // Ako već želite da kreirate konekciju odmah nakon učitavanja konfiguracije,
+            // možete ovde pozvati createPeerConnection() ili postaviti neki flag.
+          })
+          .catch(error => console.error("Greška pri učitavanju ICE konfiguracije:", error));
+
+  // Funkcija za kreiranje peer konekcije koja koristi dinamički učitanu konfiguraciju
+  function createPeerConnection() {
+    if (!iceServers) {
+      console.error("ICE konfiguracija nije učitana!");
+      return;
+    }
+    rtcPeerConnection = new RTCPeerConnection(iceServers);
+    rtcPeerConnection.onicecandidate = onIceCandidate;
+    rtcPeerConnection.ontrack = onTrack;
+  }
+
 
   // Povezivanje sa Socket.IO serverom
   // Koristite WebSocket transport eksplicitno
