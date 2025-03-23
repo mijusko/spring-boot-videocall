@@ -23,7 +23,7 @@ public class IceConfigController {
     @Value("${turn.server.password}")
     private String turnServerPassword;
 
-    @GetMapping("/api/iceConfig")
+    @GetMapping("https://spring-boot-videocall.onrender.com/api/iceConfig")
     public Map<String, Object> getIceConfig() {
         Map<String, Object> iceConfig = new HashMap<>();
         List<Map<String, String>> iceServers = new ArrayList<>();
