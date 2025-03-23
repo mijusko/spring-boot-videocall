@@ -69,7 +69,7 @@
   let iceServers; // Globalna promenljiva za ICE konfiguraciju
 
   // Učitavanje ICE konfiguracije sa servera preko REST endpoint-a
-  fetch('/api/iceConfig')
+  fetch('https://spring-boot-videocall.onrender.com/api/iceConfig')
     .then(response => {
       if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
       return response.json();
