@@ -41,6 +41,6 @@ public class IceConfigController {
         iceServers.add(turn);
 
         iceConfig.put("iceServers", iceServers);
-        return iceConfig;
+        return Map.of("iceServers", iceServers); // Direktno vraća iceServers listu
     }
 }
