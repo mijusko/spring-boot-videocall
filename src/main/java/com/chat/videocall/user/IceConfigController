@@ -1,4 +1,4 @@
-package com.chat.videocall.user;
+package com.chat.videocall.user; // Proverite da li je paket ispravan
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,16 +12,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class IceConfigController {
 
     @Value("${stun.server.url}")
-    private String STUN;
+    private String stunServerUrl;
 
     @Value("${turn.server.url}")
-    private String TURN;
+    private String turnServerUrl;
 
     @Value("${turn.server.username}")
-    private String USERNAME;
+    private String turnServerUsername;
 
     @Value("${turn.server.password}")
-    private String PASSWORD;
+    private String turnServerPassword;
 
     @GetMapping("/api/iceConfig")
     public Map<String, Object> getIceConfig() {
@@ -30,14 +30,14 @@ public class IceConfigController {
 
         // Dodavanje STUN servera
         Map<String, String> stun = new HashMap<>();
-        stun.put("urls", STUN);
+        stun.put("urls", stunServerUrl);
         iceServers.add(stun);
 
         // Dodavanje TURN servera
         Map<String, String> turn = new HashMap<>();
-        turn.put("urls", TURN);
-        turn.put("username", USERNAME);
-        turn.put("credential", PASSWORD);
+        turn.put("urls", turnServerUrl);
+        turn.put("username", turnServerUsername);
+        turn.put("credential", turnServerPassword);
         iceServers.add(turn);
 
         iceConfig.put("iceServers", iceServers);
